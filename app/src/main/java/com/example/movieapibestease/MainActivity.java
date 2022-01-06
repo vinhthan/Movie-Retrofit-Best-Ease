@@ -1,5 +1,6 @@
 package com.example.movieapibestease;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -21,6 +22,9 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
+
+    private int page = 1;
+    private LinearLayoutManager manager;
     private RecyclerView recyclerView;
     private List<Movies.Results> mList;
     private MovieAdapter mAdapter;
@@ -36,26 +40,42 @@ public class MainActivity extends AppCompatActivity {
 
         getMovies();
 
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull @org.jetbrains.annotations.NotNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                int visib = manager.getChildCount();
+                int pass = manager.findFirstCompletelyVisibleItemPosition();
+                int total = manager.getItemCount();
+                if (visib+pass >= total) {
+                    page++;
+                    getMovies();
+                }
+            }
+        });
+
 
 
     }
 
     private void getMovies() {
+        manager = new LinearLayoutManager(this);
         recyclerView= findViewById(R.id.recyclerView);
         mList = new ArrayList<>();
         mAdapter = new MovieAdapter(mList, this);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
+        //recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
+        recyclerView.setLayoutManager(manager);
         recyclerView.setHasFixedSize(true);
         recyclerView.setAdapter(mAdapter);
 
-        Call<Movies> call = apiInterface.getMovies(Constants.KEY_API);
+        Call<Movies> call = apiInterface.getMovies(Constants.KEY_API, page);
         call.enqueue(new Callback<Movies>() {
             @Override
             public void onResponse(Call<Movies> call, Response<Movies> response) {
                 if (response.isSuccessful()){
-                    if (!mList.isEmpty()){
+                    /*if (!mList.isEmpty()){
                         mList.clear();
-                    }
+                    }*/
                     //add list
                     mList.addAll(response.body().getResults());
                     mAdapter.notifyDataSetChanged();
